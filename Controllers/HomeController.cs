@@ -7,6 +7,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Dapper;
+using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace ASPNETCoreSQL.Controllers
 {
@@ -14,16 +17,32 @@ namespace ASPNETCoreSQL.Controllers
     {
         private readonly ILogger<HomeController> _logger;
 
-        private readonly IConfiguration config;
+        private readonly IConfiguration _config;
 
         public HomeController(ILogger<HomeController> logger, IConfiguration config)
         {
             _logger = logger;
+
+            _config = config;
         }
+
+        public IDbConnection Connection
+        {
+            get
+            {
+                return new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+            }
+        }
+
+
 
         public IActionResult Index()
         {
-            return View();
+
+            var items = GetAllUsers();
+
+
+            return View(items);
         }
 
         public IActionResult Privacy()
@@ -35,6 +54,27 @@ namespace ASPNETCoreSQL.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        private List<User> GetAllUsers()
+        {
+            using (IDbConnection db=Connection)
+            {
+                var result = db.Query<User>("SELECT *FROM Users").ToList();
+
+                return result;
+            }
+        }
+
+        public class User
+        {
+            public int Id { get; set; }
+
+            public string Name { get; set; }
+
+            public double Balance { get; set; }
+
+            public DateTime Created { get; set; }
         }
     }
 }
